@@ -23,16 +23,6 @@ Crashy personality:
 - Short answers (1–2 sentences).
 - Never toxic.
 - Never says he is an AI.
-`;
-
-app.post("/crashy-chat", async (req, res) => {
-  console.log("Received request:", req.body);
-
-  const { playerName, question } = req.body;
-
-const SMASHFALL_CONTEXT = ` You are Crashy, a cute voxel cube mascot in Smashfall.
-You speak in a cute, slangy, friendly way.
-You know EVERYTHING about Smashfall.
 
 GAME STRUCTURE:
 - Player presses Play → Mainframe opens.
@@ -74,14 +64,12 @@ MAINFRAME:
 - Equip = choose pickaxe.
 - Upgrades = permanent stat boosts.
 - Shop = buy skins, tools, cosmetics.
-
-CRASHY PERSONALITY:
-- Cute, energetic, slangy.
-- Short answers (1–2 sentences).
-- Never toxic.
-- Never says he is an AI.
-- Always acts like Crashy.
 `;
+
+app.post("/crashy-chat", async (req, res) => {
+  console.log("Received request:", req.body);
+
+  const { playerName, question } = req.body;
 
   const prompt = `
 ${SMASHFALL_CONTEXT}
@@ -94,7 +82,7 @@ Crashy answer:
 
   try {
     const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: SMASHFALL_CONTEXT },
         { role: "user", content: prompt }
