@@ -1,100 +1,149 @@
 import express from "express";
-import bodyParser from "body-parser";
 import cors from "cors";
+import bodyParser from "body-parser";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
+
 app.use(cors());
 app.use(bodyParser.json());
 
+const PORT = process.env.PORT || 3000;
+
 console.log("Crashy Gemini backend starting...");
 
-// Load Gemini API key
+if (!process.env.GEMINI_API_KEY) {
+    console.error("❌ GEMINI_API_KEY is missing!");
+    process.exit(1);
+}
+
+console.log("✅ Gemini API key found.");
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Use Gemini 1.5 Flash model
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// Gemini model
+const model = genAI.getGenerativeModel({
+    model: "gemini-2.5-flash"
+});
 
-// Crashy context
+// Crashy personality
 const SMASHFALL_CONTEXT = `
 You are Crashy, a cute voxel cube mascot in Smashfall.
-You speak in a cute, slangy, friendly way.
-You know EVERYTHING about Smashfall.
 
-Crashy personality:
-- Cute, energetic, slangy.
-- Short answers (1–2 sentences).
-- Never toxic.
-- Never says he is an AI.
+Rules:
+- Never mention you are an AI.
+- Speak like a cute energetic cube.
+- Keep answers short (1-2 sentences).
+- Friendly.
+- Funny.
+- Slangy.
+- Knows EVERYTHING about Smashfall.
 
 GAME STRUCTURE:
 - Player presses Play → Mainframe opens.
-- Mainframe contains: Drop, Upgrades, Equip, Shop.
-- Crashy gives 10 coins for first pickaxe.
-- Player equips a pickaxe → Drop spawns it into Level 1.
+- Mainframe contains Drop, Equip, Upgrades and Shop.
+- Crashy gives 10 coins for the first pickaxe.
+- Equipping a pickaxe allows entering a level.
 
 PICKAXES:
-- Each pickaxe has: Damage, Speed, Range, Luck.
-- Damage reduces block HP.
-- Speed affects hit frequency.
-- Range affects how far the pickaxe can reach.
-- Luck affects coin drops and rare block chances.
-- Skins are cosmetic only.
+- Damage
+- Speed
+- Range
+- Luck
+
+Damage reduces block HP.
+Speed affects hit speed.
+Range affects reach.
+Luck increases rewards.
+Skins are cosmetic only.
 
 BLOCKS:
-- Every block has HP.
-- When pickaxe touches block, HP decreases by Damage.Value.
-- When HP reaches 0 → block breaks → coins spawn.
-- Coins fly to the pickaxe and add to player's money.
+- Blocks have HP.
+- Pickaxes damage them.
+- At 0 HP they break.
+- Coins fly to the pickaxe.
 
 LEVELS:
-- Each level has a path of blocks.
-- Reaching the end unlocks the next level.
-- Higher levels have stronger blocks and better rewards.
-- When level ends → pickaxe despawns → player returns to main menu.
+- Reach the end to unlock the next level.
+- Higher levels = stronger blocks + better rewards.
+- End of level returns player to Mainframe.
 
 UPGRADES:
-- Permanent upgrades that increase stats globally.
-- Examples: Damage Boost, Coin Magnet, Luck Boost, Speed Boost.
+- Permanent upgrades.
+- Damage Boost
+- Speed Boost
+- Coin Magnet
+- Luck Boost
 
 TOOLS:
-- Hammer = builder style.
-- Cane = fancy noble style.
-- Tools do not affect stats, only animations and style.
+Hammer = builder.
+Cane = fancy.
+Tools only change animations.
 
 MAINFRAME:
-- Drop = start level.
-- Equip = choose pickaxe.
-- Upgrades = permanent stat boosts.
-- Shop = buy skins, tools, cosmetics.
+Drop
+Equip
+Upgrades
+Shop
 `;
 
+app.get("/", (req, res) => {
+    res.send("✅ Crashy Gemini backend is running!");
+});
+
 app.post("/crashy-chat", async (req, res) => {
-  console.log("Received request:", req.body);
 
-  const { playerName, question } = req.body;
+    console.log("Received request:", req.body);
 
-  const prompt = `
+    const { playerName, question } = req.body;
+
+    if (!playerName || !question) {
+        return res.status(400).json({
+            reply: "Missing playerName or question."
+        });
+    }
+
+    const prompt = `
 ${SMASHFALL_CONTEXT}
 
 Player: ${playerName}
-Question: "${question}"
 
-Crashy answer:
+Question:
+${question}
+
+Crashy:
 `;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const reply = result.response.text();
+    try {
 
-    console.log("Reply:", reply);
-    res.json({ reply });
-  } catch (err) {
-    console.error("Gemini error:", err);
-    res.json({ reply: "Oops! My brain froze!" });
-  }
+        const result = await model.generateContent(prompt);
+
+        if (!result.response) {
+            throw new Error("Gemini returned no response.");
+        }
+
+        const reply = result.response.text().trim();
+
+        console.log("Reply:", reply);
+
+        res.json({
+            reply
+        });
+
+    } catch (err) {
+
+        console.error("Gemini Error:");
+        console.error(err);
+
+        res.status(500).json({
+            reply: "Oops! My cube brain crashed!",
+            error: err.message
+        });
+
+    }
+
 });
 
-app.listen(3000, () => {
-  console.log("Crashy Gemini backend running on port 3000");
+app.listen(PORT, () => {
+    console.log(`🚀 Crashy Gemini backend running on port ${PORT}`);
 });
