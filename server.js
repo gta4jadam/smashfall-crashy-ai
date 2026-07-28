@@ -1,17 +1,16 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-console.log("Crashy backend starting...");
+console.log("Crashy Gemini backend starting...");
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const SMASHFALL_CONTEXT = `
 You are Crashy, a cute voxel cube mascot in Smashfall.
@@ -81,24 +80,17 @@ Crashy answer:
 `;
 
   try {
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: SMASHFALL_CONTEXT },
-        { role: "user", content: prompt }
-      ]
-    });
+    const result = await model.generateContent(prompt);
+    const reply = result.response.text();
 
-    const reply = completion.choices[0].message.content;
     console.log("Reply:", reply);
-
     res.json({ reply });
   } catch (err) {
-    console.error("OpenAI error:", err);
+    console.error("Gemini error:", err);
     res.json({ reply: "Oops! My brain froze!" });
   }
 });
 
 app.listen(3000, () => {
-  console.log("Crashy backend running on port 3000");
+  console.log("Crashy Gemini backend running on port 3000");
 });
