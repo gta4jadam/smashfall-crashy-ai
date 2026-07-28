@@ -9,9 +9,13 @@ app.use(bodyParser.json());
 
 console.log("Crashy Gemini backend starting...");
 
+// Load Gemini API key
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// Use Gemini 1.5 Flash model
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
+// Crashy context
 const SMASHFALL_CONTEXT = `
 You are Crashy, a cute voxel cube mascot in Smashfall.
 You speak in a cute, slangy, friendly way.
